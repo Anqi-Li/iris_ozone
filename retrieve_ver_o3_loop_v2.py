@@ -14,6 +14,7 @@ Sa has off-diagonal elements
 Se scale with equilibrium index^4
 
 """
+#%% import modules
 
 import numpy as np
 import scipy.sparse as sp
@@ -36,7 +37,7 @@ import gc
 #%% load IRIS limb radiance data
 filename = "ir_slc_031958_ch3.nc"
 # path = 'https://arggit.usask.ca/opendap/'
-path = "./data/StrayLightCorrected/"
+path = "./"
 # orbit = sys.argv[1]
 ir = xr.open_dataset(path + filename)  # , chunks={"time": 100})
 ir = ir.sel(time=~ir.indexes["time"].duplicated())
@@ -661,131 +662,135 @@ def run_and_save(image_lst, orbit_nr):
     result = [i for i in result if i]  # filter out all None element in list
 
     if len(result) > 0:
-        mjd = np.stack([result[i][0] for i in range(len(result))])
+        time = np.stack([result[i][0] for i in range(len(result))])
         ds = xr.Dataset()
         ds = ds.update(
             {
                 # coordinates
                 "z": (["z"], z * 1e-3, {"units": "km"}),
-                "mjd": (["mjd"], mjd),
+                "time": (["time"], time),
                 "clima_z": (["clima_z"], clima.z, {"units": "km"}),
                 "pixel": (["pixel"], l1.pixel),
                 # ver retrieval
                 "ver": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][1] for i in range(len(result))]),
                     {"units": "photons cm-3 s-1"},
                 ),
                 "ver_mr": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][2] for i in range(len(result))]),
                 ),
                 "ver_mr_rel": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][3] for i in range(len(result))]),
                 ),
                 "ver_retrieval_error": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][4] for i in range(len(result))]),
                     {"units": "photons cm-3 s-1"},
                 ),
                 "ver_smoothing_error": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][5] for i in range(len(result))]),
                     {"units": "photons cm-3 s-1"},
                 ),
                 "limb_residual": (
-                    ["mjd", "pixel"],
+                    ["time", "pixel"],
                     np.stack([result[i][6] for i in range(len(result))]),
                     {"units": "photons cm-3 s-1"},
                 ),
                 "ver_cost_x": (
-                    ["mjd"],
+                    ["time"],
                     np.stack([result[i][7] for i in range(len(result))]),
                 ),
                 "ver_cost_y": (
-                    ["mjd"],
+                    ["time"],
                     np.stack([result[i][8] for i in range(len(result))]),
                 ),
                 # o3 retrieval
                 "o3": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][9] for i in range(len(result))]),
                     {"units": "cm-3"},
                 ),
                 "o3_mr": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][10] for i in range(len(result))]),
                 ),
                 "o3_mr_rel": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][11] for i in range(len(result))]),
                 ),
                 "o3_retrieval_error": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][12] for i in range(len(result))]),
                     {"units": "cm-3"},
                 ),
                 "o3_smoothing_error": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][13] for i in range(len(result))]),
                     {"units": "cm-3"},
                 ),
                 "ver_residual": (
-                    ["mjd", "z"],
+                    ["time", "z"],
                     np.stack([result[i][14] for i in range(len(result))]),
                     {"units": "photons cm-3 s-1"},
                 ),
                 "o3_cost_x": (
-                    ["mjd"],
+                    ["time"],
                     np.stack([result[i][15] for i in range(len(result))]),
                 ),
                 "o3_cost_y": (
-                    ["mjd"],
+                    ["time"],
                     np.stack([result[i][16] for i in range(len(result))]),
                 ),
                 "o3_evaluate": (
-                    ["mjd"],
+                    ["time"],
                     np.stack([result[i][17] for i in range(len(result))]),
                     {"note": "number of iterations"},
                 ),
                 "o3_gamma": (
-                    ["mjd"],
+                    ["time"],
                     np.stack([result[i][18] for i in range(len(result))]),
                 ),
                 "o3_status": (
-                    ["mjd"],
+                    ["time"],
                     np.stack([result[i][19] for i in range(len(result))]),
                     {"note": "1:converged by xchange, 2:converged by d2, 3:diverged"},
                 ),
                 # apriori
                 "o3_a": (
-                    ["mjd", "clima_z"],
+                    ["time", "clima_z"],
                     np.stack([result[i][20] for i in range(len(result))]),
                     {"units": "cm-3", "name": "CMAM O3"},
                 ),
                 "ver_a": (
-                    ["mjd", "clima_z"],
+                    ["time", "clima_z"],
                     np.stack([result[i][21] for i in range(len(result))]),
                     {"units": "photons cm-3 s-1"},
                 ),
                 # the others
                 "hour_after_sunrise": (
-                    ["mjd"],
+                    ["time"],
                     np.stack([result[i][22] for i in range(len(result))]),
                 ),
-                "longitude": (["mjd"], ir.longitude.sel(mjd=mjd), {"units": "deg E"}),
-                "latitude": (["mjd"], ir.latitude.sel(mjd=mjd), {"units": "deg N"}),
-                "sza": (["mjd"], ir.sza.sel(mjd=mjd), {"units": "deg"}),
-                "lst": (["mjd"], lst.sel(mjd=mjd), {"units": "hour"}),
-                "orbit": (["mjd"], ir.orbit.sel(mjd=mjd), {"name": "orbit number"}),
+                "longitude": (
+                    ["time"],
+                    ir.longitude.sel(time=time),
+                    {"units": "deg E"},
+                ),
+                "latitude": (["time"], ir.latitude.sel(time=time), {"units": "deg N"}),
+                "sza": (["time"], ir.sza.sel(time=time), {"units": "deg"}),
+                "lst": (["time"], lst.sel(time=time), {"units": "hour"}),
+                "orbit": (
+                    ["time"],
+                    np.ones(len(time), dtype="int32") * ir.orbit.item(),
+                    {"name": "orbit number"},
+                ),
             }
         )
-        ds.to_netcdf(
-            "~/Documents/osiris_database/iris_ver_o3/ver_o3/v2p0/iri_ver_o3_orbit{}_v2p0.nc".format(
-                orbit_nr
-            )
-        )
+        ds.to_netcdf("./data/processed/iri_ver_o3_orbit{}_v2p0.nc".format(orbit_nr))
 
 
 #%%%%%%%%%%%%%%%%%%%% main part #####################
@@ -796,5 +801,5 @@ if __name__ == "__main__":
     image_lst = ir.time.searchsorted(
         ir.where(ir.orbit == orbit_nr, drop=True).time
     )  # get list of all images
-    run_and_save(image_lst, orbit_nr)
+    run_and_save(image_lst[0:10], orbit_nr)
     gc.collect()
