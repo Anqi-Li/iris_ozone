@@ -27,6 +27,7 @@ from numba import jit
 import os
 import sys
 import warnings
+import datetime as dt
 
 warnings.filterwarnings("ignore")
 import gc
@@ -108,9 +109,9 @@ z = np.arange(10e3, 130e3, 1e3)  # m
 
 
 #%% Functions
-def cal_sunrise_h(lat, lon, mjd):
+def cal_sunrise_h(lat, lon, time):
     points = Observer(longitude=lon * u.deg, latitude=lat * u.deg, elevation=89 * u.km)
-    times = Time(mjd, format="mjd")
+    times = Time(time, format="datetime64")
     sunrise = points.sun_rise_time(times, which="previous")
     try:
         sunrise_h = (times - sunrise).sec / 3600  # unit: hour
@@ -478,7 +479,7 @@ def f(i):
 
             background_atm = clima.sel(
                 lat=ir.latitude.isel(time=i),
-                month=Time(ir.time[i], format="time").datetime.month,
+                month=Time(ir.time[i], format="datetime64").datetime.month,
                 method="nearest",
             )
             # make apriori ver
@@ -611,7 +612,7 @@ def f(i):
             ).reindex(pixel=l1.pixel)
 
             return (
-                day_mjd_lst[i].values,
+                day_time_lst[i].values,
                 # ver retrieval
                 ver_hat,
                 ver_mr,
@@ -790,23 +791,10 @@ def run_and_save(image_lst, orbit_nr):
 #%%%%%%%%%%%%%%%%%%%% main part #####################
 if __name__ == "__main__":
 
-    for orbit_nr in np.unique(ir.orbit)[::2]:  # process every *th orbit
-        if os.path.exists(
-            "/home/anqil/Documents/osiris_database/iris_ver_o3/ver_o3/v2p0/iri_ver_o3_orbit{}_v2p0.nc".format(
-                orbit_nr
-            )
-        ):
-            print("Orbit {} already have been processed and saved".format(orbit_nr))
-        else:
-            image_lst = ir.time.searchsorted(
-                ir.where(ir.orbit == orbit_nr, drop=True).time
-            )
-            while len(image_lst) == 0:
-                print("orbit {} does not have images to process".format(orbit_nr))
-                orbit_nr += 1
-                image_lst = ir.mjd.searchsorted(
-                    ir.where(ir.orbit == orbit_nr, drop=True).time
-                )
+    orbit_nr = np.unique(ir.orbit)[0]  # find orbit in dataset
 
-            run_and_save(image_lst, orbit_nr)
-            gc.collect()
+    image_lst = ir.time.searchsorted(
+        ir.where(ir.orbit == orbit_nr, drop=True).time
+    )  # get list of all images
+    run_and_save(image_lst, orbit_nr)
+    gc.collect()
