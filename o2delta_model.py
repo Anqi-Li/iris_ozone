@@ -1017,7 +1017,7 @@ if __name__ == '__main__':
 #    file = 'apriori_temp.nc'
 #    ds = xr.open_dataset(path+file)
 #    o3 = ds.o3_vmr.values * ds.m.values
-    file = '/home/anqil/Documents/osiris_database/ex_data/msis_cmam_climatology_200.nc'
+    file = 'msis_cmam_climatology_200.nc'
     ds = xr.open_dataset(file).interp(month=1, lat=13.5)
     ds = ds.sel(z=slice(0,top))
     m = (ds.o2+ds.n2+ds.o) * 1e-6 #cm-3

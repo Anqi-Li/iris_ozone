@@ -442,8 +442,8 @@ def pathlength_geometry_correction(z, h, abs_table, background_atm):
 
 
 def f(i):
-    alt_chop_cond = (altitude.isel(mjd=i) > bot) & (
-        altitude.isel(mjd=i) < top
+    alt_chop_cond = (altitude.isel(time=i) > bot) & (
+        altitude.isel(time=i) < top
     )  # select altitude range
     if alt_chop_cond.sum() < 2:
         print(
@@ -452,14 +452,14 @@ def f(i):
             )
         )
         pass
-    elif l1.isel(mjd=i).notnull().sum() == 0:
+    elif l1.isel(time=i).notnull().sum() == 0:
         print(
             "l1 is all nan {}/{} in orbit {}".format(
                 i - image_lst[0], len(image_lst), orbit_nr
             )
         )
         pass
-    elif error.isel(mjd=i).notnull().sum() == 0:
+    elif error.isel(time=i).notnull().sum() == 0:
         print(
             "error is all nan {}/{} in orbit {}".format(
                 i - image_lst[0], len(image_lst), orbit_nr
@@ -477,12 +477,12 @@ def f(i):
             #             print(i)
 
             background_atm = clima.sel(
-                lat=ir.latitude.isel(mjd=i),
-                month=Time(ir.mjd[i], format="mjd").datetime.month,
+                lat=ir.latitude.isel(time=i),
+                month=Time(ir.time[i], format="time").datetime.month,
                 method="nearest",
             )
             # make apriori ver
-            o3_clima = background_atm.o3.sel(lst=lst.isel(mjd=i), method="nearest")
+            o3_clima = background_atm.o3.sel(lst=lst.isel(time=i), method="nearest")
             T_a = background_atm.T
             m_a = background_atm.m
             p_a = background_atm.p
@@ -499,8 +499,8 @@ def f(i):
 
             # make jacobian matrix
             h = (
-                altitude.isel(mjd=i)
-                .where(l1.isel(mjd=i).notnull(), drop=True)
+                altitude.isel(time=i)
+                .where(l1.isel(time=i).notnull(), drop=True)
                 .where(alt_chop_cond, drop=True)
             )  # in m
             pathlength, pathlength_ref = pathlength_geometry_correction(
@@ -514,8 +514,8 @@ def f(i):
                 fr_ref.interp(T=ir_T, kwargs=dict(fill_value="extrapolate")) * 1e-2
             )
             normalise = np.pi * 4 / overlap_filter.values
-            limb = normalise * l1.isel(mjd=i).sel(pixel=h.pixel).values
-            error_2 = (normalise * error.isel(mjd=i).sel(pixel=h.pixel).values) ** 2
+            limb = normalise * l1.isel(time=i).sel(pixel=h.pixel).values
+            error_2 = (normalise * error.isel(time=i).sel(pixel=h.pixel).values) ** 2
 
             Se_inv = np.diag(1 / error_2)
             #            Sa_inv = np.diag(1/(0.75*ver_a)**2)
@@ -549,7 +549,7 @@ def f(i):
                 True,
             )  # m
             hour_after_sunrise = cal_sunrise_h(
-                ir.latitude.isel(mjd=i), ir.longitude.isel(mjd=i), ir.mjd[i]
+                ir.latitude.isel(time=i), ir.longitude.isel(time=i), ir.time[i]
             )
             if np.isnan(hour_after_sunrise):
                 scale_lifetime = 1
@@ -798,14 +798,14 @@ if __name__ == "__main__":
         ):
             print("Orbit {} already have been processed and saved".format(orbit_nr))
         else:
-            image_lst = ir.mjd.searchsorted(
-                ir.where(ir.orbit == orbit_nr, drop=True).mjd
+            image_lst = ir.time.searchsorted(
+                ir.where(ir.orbit == orbit_nr, drop=True).time
             )
             while len(image_lst) == 0:
                 print("orbit {} does not have images to process".format(orbit_nr))
                 orbit_nr += 1
                 image_lst = ir.mjd.searchsorted(
-                    ir.where(ir.orbit == orbit_nr, drop=True).mjd
+                    ir.where(ir.orbit == orbit_nr, drop=True).time
                 )
 
             run_and_save(image_lst, orbit_nr)
