@@ -9,7 +9,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import xarray as xr
 import sys
-sys.path.append('/home/anqil/Documents/Python/iris/old_files/')
 
 #%% IRA band
 def gIRA (pres,sol_zen):
@@ -1071,7 +1070,7 @@ if __name__ == '__main__':
 
 #%%
 if __name__ == '__main__':    
-    file = '/home/anqil/Documents/osiris_database/ex_data/msis_cmam_climatology_200.nc'
+    file = 'msis_cmam_climatology_z200_lat8576.nc'
     ds = xr.open_dataset(file).interp(month=1, lat=13.5)
     ds = ds.sel(z=slice(0,top))
     m = (ds.o2+ds.n2+ds.o) * 1e-6 #cm-3
